@@ -12,10 +12,10 @@ module.exports = merge(common, {
     hot: true,
     open: true,
     disableHostCheck: true,
-    port: 3000,
+    port: 5000,
     proxy: {
       '/api': {
-        target: 'http://localhost:5000/',
+        target: 'http://localhost:3000/',
         pathRewrite: { '^/api': '' }
       }
     }

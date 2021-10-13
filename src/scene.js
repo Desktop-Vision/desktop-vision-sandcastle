@@ -1,9 +1,23 @@
-import * as THREE from 'three';
 import Cubes from '../src/misc/Cubes'
 import Lights from '../src/misc/Lights'
 import Renderer from './engine/renderer';
 import Camera from './engine/camera';
 import State from "./engine/state";
+
+import * as THREE from 'three';
+import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory'
+import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.js'
+
+const {
+	Computer, 
+	ComputerConnection, 
+	Keyboard, 
+	MouseControls, 
+	TouchControls, 
+	KeyboardControls, 
+	XRControls 
+} = window.DesktopVision.loadSDK(THREE, XRControllerModelFactory, XRHandModelFactory);
+
 
 let authToken = "", uid = "", computerId = ""
 
@@ -11,15 +25,6 @@ let computerConnection, code, token
 let desktop, mouseControls, xrControls, touchControls, keyboardControls, keyboard;
 let time = 0
 
-const {
-  Computer,
-  ComputerConnection,
-  Keyboard,
-  MouseControls,
-  TouchControls,
-  KeyboardControls,
-  XRControls
-} = window.DV
 
 const clientID = "6wlqRxEgp60JXkcGkLY2"; //must match the api key used on the server
 
@@ -53,9 +58,8 @@ const xrControlsOptions = {
 }
 
 loadScene()
-checkForCode()
 getDvCode()
-connectToDV()
+checkForCode()
 
 function loadScene() {
   cubes.addToScene()
@@ -76,10 +80,24 @@ function getDvCode() {
   redirectURL.searchParams.set("oauth", "desktopvision");
   const redirectUri = encodeURIComponent(redirectURL);
 
-  window.location.href = `https://desktop.vision/login/?response_type=code&client_id=${clientID}&scope=${scope}&redirect_uri=${redirectUri}&selectComputer=${true}`;
+	const method = 'popup' // change this to something else for same window auth
+	if (method === 'popup') {
+		const newWindow = window.open(`https://desktop.vision/login/?response_type=code&client_id=${clientID}&scope=${scope}&redirect_uri=${redirectUri}&redirect_type=popup&selectComputer=true`);
+		window.onmessage = function (e) {
+			code = e.data.code
+			computerId = e.data.computerId
+			if (code && computerId) {
+				newWindow.close()
+        connectToDV()
+			}
+		};
+	} else {
+		window.location.href = `https://desktop.vision/login/?response_type=code&client_id=${clientID}&scope=${scope}&redirect_uri=${redirectUri}&selectComputer=${selectComputer}`;
+	}
 }
 
 function connectToDV() {
+  if (!code) return
   fetch(`/api/desktop-vision-auth?code=${code}`).then(response => {
     response.json().then(userData => {
       token = userData.token;
