@@ -161,10 +161,10 @@ function createComputerConnection(connectionOptions) {
 
 function createComputer() {
   desktop = new Computer(video, renderer, computerConnection, Camera, false, desktopOptions);
-  keyboard = new Keyboard(computerConnection, Camera, keyboardOptions)
-  xrControls = new XRControls(renderer, Camera, scene, desktop, [], xrControlsOptions);
-  mouseControls = new MouseControls(Camera, desktop, sceneContainer);
-  touchControls = new TouchControls(Camera, desktop, sceneContainer);
+  keyboard = new Keyboard(desktop, keyboardOptions)
+  xrControls = new XRControls(scene, desktop, [], xrControlsOptions);
+  mouseControls = new MouseControls(desktop, sceneContainer);
+  touchControls = new TouchControls(desktop, sceneContainer);
   keyboardControls = new KeyboardControls(desktop)
 
   desktop.keyboard = keyboard
