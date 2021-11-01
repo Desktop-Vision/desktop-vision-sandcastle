@@ -11,11 +11,6 @@ import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.
 const {
   Computer,
   ComputerConnection,
-  Keyboard,
-  MouseControls,
-  TouchControls,
-  KeyboardControls,
-  XRControls
 } = window.DesktopVision.loadSDK(THREE, XRControllerModelFactory, XRHandModelFactory);
 
 
@@ -26,7 +21,7 @@ let desktop, mouseControls, xrControls, touchControls, keyboardControls, keyboar
 let time = 0
 
 
-const clientID = "6wlqRxEgp60JXkcGkLY2"; //must match the api key used on the server
+const clientID = "JVweYEBkjNZBneYdSBf0"; //must match the api key used on the server
 
 const scene = new THREE.Scene();
 const renderer = Renderer
@@ -36,30 +31,9 @@ const lights = new Lights(scene)
 const video = document.createElement('video')
 const sceneContainer = Renderer.domElement
 
-const keyboardOptions = {
-  initialPosition: { x: 0, y: -0.325, z: 0 },
-  initialScalar: 0.15,
-  hideMoveIcon: true,
-  hideResizeIcon: false,
-}
-
-const desktopOptions = {
-  renderScreenBack: true,
-  initialScalar: 0.00025,
-  hideMoveIcon: false,
-  hideResizeIcon: false,
-  includeKeyboard: true,
-  grabDistance: 0.5,
-}
-
-const xrControlsOptions = {
-  hideHands: false,
-  hideControllers: false
-}
-
 loadScene()
-getDvCode()
-checkForCode()
+createComputer()
+// checkForCode()
 
 function loadScene() {
   cubes.addToScene()
@@ -98,6 +72,7 @@ function getDvCode() {
 
 function connectToDV() {
   if (!code) return
+  console.log('code')
   fetch(`/api/desktop-vision-auth?code=${code}`).then(response => {
     response.json().then(userData => {
       token = userData.token;
@@ -160,29 +135,41 @@ function createComputerConnection(connectionOptions) {
 }
 
 function createComputer() {
-  desktop = new Computer(video, renderer, computerConnection, Camera, false, desktopOptions);
-  keyboard = new Keyboard(desktop, keyboardOptions)
-  xrControls = new XRControls(scene, desktop, [], xrControlsOptions);
-  mouseControls = new MouseControls(desktop, sceneContainer);
-  touchControls = new TouchControls(desktop, sceneContainer);
-  keyboardControls = new KeyboardControls(desktop)
+	video.setAttribute('webkit-playsinline', 'webkit-playsinline');
+	video.setAttribute('playsinline', 'playsinline');
+	video.src = '/dvVid.mp4';
+	video.muted = true
+	video.play();
 
-  desktop.keyboard = keyboard
-  desktop.setPosition({ x: 0, y: 0, z: -0.5 });
+	const desktopOptions = {
+		renderScreenBack: true,
+		initialScalar: 0.0005,
+		initialPosition: { x: 0, y: 0, z: 1 },
+		hideMoveIcon: false,
+		hideResizeIcon: false,
+		includeKeyboard: true,
+		grabDistance: 1,
+		renderAsLayer: false,
+		keyboardOptions: {
+			hideMoveIcon: false,
+			hideResizeIcon: false,
+		}, 
+		xrOptions: {
+			hideControllers: false,
+			hideHands: false,
+			hideCursors: false
+		}
+	}
 
-  State.eventHandler.addEventListener("selectstart", xrControls.onSelectStart);
-  State.eventHandler.addEventListener("selectend", xrControls.onSelectEnd);
-
-  scene.add(desktop.object3d)
-  scene.add(xrControls.object3d)
+	desktop = new Computer(scene, sceneContainer, video, renderer, computerConnection, Camera, desktopOptions);
+	desktop.position.y = 0
+	desktop.position.z = -1
+  scene.add(desktop)
 }
 
 scene.Update = () => {
   if (cubes) cubes.animate(time)
   if (desktop) desktop.update();
-  if (keyboard) keyboard.update();
-  if (mouseControls) mouseControls.update();
-  if (xrControls) xrControls.update();
 
   time += 5
 }
