@@ -32,8 +32,9 @@ const video = document.createElement('video')
 const sceneContainer = Renderer.domElement
 
 loadScene()
-createComputer()
-// checkForCode()
+getDvCode()
+// createTestComputer()
+checkForCode()
 
 function loadScene() {
   cubes.addToScene()
@@ -72,7 +73,6 @@ function getDvCode() {
 
 function connectToDV() {
   if (!code) return
-  console.log('code')
   fetch(`/api/desktop-vision-auth?code=${code}`).then(response => {
     response.json().then(userData => {
       token = userData.token;
@@ -135,12 +135,6 @@ function createComputerConnection(connectionOptions) {
 }
 
 function createComputer() {
-	video.setAttribute('webkit-playsinline', 'webkit-playsinline');
-	video.setAttribute('playsinline', 'playsinline');
-	video.src = '/dvVid.mp4';
-	video.muted = true
-	video.play();
-
 	const desktopOptions = {
 		renderScreenBack: true,
 		initialScalar: 0.0005,
@@ -165,6 +159,16 @@ function createComputer() {
 	desktop.position.y = 0
 	desktop.position.z = -1
   scene.add(desktop)
+}
+
+function createTestComputer(){
+	video.setAttribute('webkit-playsinline', 'webkit-playsinline');
+	video.setAttribute('playsinline', 'playsinline');
+	video.src = '/dvVid.mp4';
+	video.muted = true
+	video.play();
+
+  createComputer()
 }
 
 scene.Update = () => {
