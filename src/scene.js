@@ -2,11 +2,11 @@ import Cubes from '../src/misc/Cubes'
 import Lights from '../src/misc/Lights'
 import Renderer from './engine/renderer';
 import Camera from './engine/camera';
-import State from "./engine/state";
 
 import * as THREE from 'three';
 import { XRControllerModelFactory } from 'three/examples/jsm/webxr/XRControllerModelFactory'
 import { XRHandModelFactory } from 'three/examples/jsm/webxr/XRHandModelFactory.js'
+import MultiAppManager from "@plutovr/multi-app-manager";
 
 const {
   Computer,
@@ -16,8 +16,8 @@ const {
 
 let authToken = "", uid = "", computerId = ""
 
-let computerConnection, code, token
-let desktop, mouseControls, xrControls, touchControls, keyboardControls, keyboard;
+let computerConnection, code, token, sharedRoom
+let desktop
 let time = 0
 
 
@@ -31,20 +31,48 @@ const lights = new Lights(scene)
 const video = document.createElement('video')
 const sceneContainer = Renderer.domElement
 
-loadScene()
-getDvCode()
-// createTestComputer()
-checkForCode()
 
-function loadScene() {
-  cubes.addToScene()
-  lights.addToScene()
+
+function createSharedRoom() {
+  const appId = MultiAppManager.getAppState().appId;
+
+  const method = "POST"
+  const body = JSON.stringify({})
+  const headers = { "Content-Type": "application/json" };
+  const fetchOptions = { method, body, headers };
+  const apiEndPoint = `https://desktop.vision/api/xrpk/connect?channel_name=${appId}`;
+  fetch(apiEndPoint, fetchOptions).then(response => {
+    return response.json();
+  }).then(data => {
+    const { roomOptions } = data
+    sharedRoom = new ComputerConnection(roomOptions.data);
+    sharedRoom.on('data', parseRoomData)
+    sharedRoom.on("stream-added", handleSharedStream);
+  })
 }
 
-function checkForCode() {
-  const urlParams = new URLSearchParams(window.location.search);
-  code = urlParams.get("code");
-  computerId = urlParams.get("computer_id");
+function handleSharedStream(newStream) {
+  MultiAppManager.getOwnerData().then(data => {
+    const { isOwner } = data
+    if (!isOwner) {
+      video.srcObject = newStream;
+      video.muted = true
+      video.play();
+      createComputer()
+    }
+  })
+}
+
+function parseRoomData(roomData) {
+  const data = JSON.parse(roomData)
+  if (data.screenPosition) handleDesktopReposition(data)
+}
+
+function handleDesktopReposition(data) {
+  if (!desktop) return
+  desktop.position.copy(data.screenPosition)
+  desktop.rotation.copy(data.screenRotation)
+  desktop.scale.set(data.screenScale.x, data.screenScale.y, data.screenScale.z)
 }
 
 function getDvCode() {
@@ -126,39 +154,56 @@ function createComputerConnection(connectionOptions) {
   if (computerConnection) computerConnection = null;
   computerConnection = new ComputerConnection(connectionOptions);
   computerConnection.on("stream-added", (newStream) => {
+    sharedRoom.addStream(newStream)
     video.srcObject = newStream;
     video.muted = true
     video.play();
-
-    createComputer();
+    createComputer()
   });
 }
 
 function createComputer() {
-	const desktopOptions = {
-		renderScreenBack: true,
-		initialScalar: 0.0005,
-		initialPosition: { x: 0, y: 0, z: 1 },
-		hideMoveIcon: false,
-		hideResizeIcon: false,
-		includeKeyboard: true,
-		grabDistance: 1,
-		renderAsLayer: false,
-		keyboardOptions: {
-			hideMoveIcon: false,
-			hideResizeIcon: false,
-		}, 
-		xrOptions: {
-			hideControllers: false,
-			hideHands: false,
-			hideCursors: false
-		}
-	}
+  if (desktop) {
+    scene.remove(desktop)
+    desktop.destroy()
+  }
+  const desktopOptions = {
+    renderScreenBack: true,
+    initialScalar: 0.001,
+    hideMoveIcon: false,
+    hideResizeIcon: false,
+    includeKeyboard: true,
+    grabDistance: 1,
+    renderAsLayer: false,
+    keyboardOptions: {
+      hideMoveIcon: false,
+      hideResizeIcon: false,
+    },
+    xrOptions: {
+      hideControllers: false,
+      hideHands: false,
+      hideCursors: false
+    }
+  }
 
-	desktop = new Computer(scene, sceneContainer, video, renderer, computerConnection, Camera, desktopOptions);
-	desktop.position.y = 0
-	desktop.position.z = -1
+  desktop = new Computer(scene, sceneContainer, video, renderer, computerConnection, Camera, desktopOptions);
+  desktop.position.y = 1.6
+  desktop.position.z = -1
+
   scene.add(desktop)
+}
+
+function propogateDesktopState() {
+  if (!desktop) return
+  if (desktop.isMoving || desktop.isResizing) {
+    const data = {
+      screenPosition: desktop.position,
+      screenScale: desktop.scale,
+      screenRotation: desktop.rotation,
+      sender: sharedRoom.localParticipant
+    }
+    sharedRoom.send(JSON.stringify(data))
+  }
 }
 
 function createTestComputer(){
@@ -174,8 +219,17 @@ function createTestComputer(){
 scene.Update = () => {
   if (cubes) cubes.animate(time)
   if (desktop) desktop.update();
+  propogateDesktopState()
 
   time += 5
 }
 
+MultiAppManager.getOwnerData().then(data => {
+  const { isOwner } = data
+  if (isOwner) {
+    getDvCode()
+  }
+})
+
+createSharedRoom()
 export { scene };
