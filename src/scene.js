@@ -1,5 +1,3 @@
-import Cubes from '../src/misc/Cubes'
-import Lights from '../src/misc/Lights'
 import Renderer from './engine/renderer';
 import Camera from './engine/camera';
 
@@ -25,8 +23,6 @@ const clientID = "JVweYEBkjNZBneYdSBf0"; //must match the api key used on the se
 
 const scene = new THREE.Scene();
 const renderer = Renderer
-const cubes = new Cubes(scene)
-const lights = new Lights(scene)
 
 const video = document.createElement('video')
 const sceneContainer = Renderer.domElement
@@ -169,7 +165,8 @@ function createComputer() {
   }
   const desktopOptions = {
     renderScreenBack: true,
-    initialScalar: 0.001,
+    initialScalar: 1,
+    initialWidth: 1,
     hideMoveIcon: false,
     hideResizeIcon: false,
     includeKeyboard: true,
@@ -217,7 +214,6 @@ function createTestComputer(){
 }
 
 scene.Update = () => {
-  if (cubes) cubes.animate(time)
   if (desktop) desktop.update();
   propogateDesktopState()
 
