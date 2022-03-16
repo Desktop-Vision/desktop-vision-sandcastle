@@ -166,13 +166,15 @@ function createComputer() {
   const desktopOptions = {
     renderScreenBack: true,
     initialScalar: 1,
-    initialWidth: 1,
+    initialWidth: 3,
     hideMoveIcon: false,
     hideResizeIcon: false,
     includeKeyboard: true,
     grabDistance: 1,
     renderAsLayer: false,
+    alwaysShowIcons: true,
     keyboardOptions: {
+      scale: 1,
       hideMoveIcon: false,
       hideResizeIcon: false,
     },

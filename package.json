@@ -19,7 +19,6 @@
   "dependencies": {
     "@plutovr/multi-app-manager": "^0.10.4",
     "cannon": "^0.6.2",
-    "firebase": "^8.0.0",
     "inquirer": "^7.2.0",
     "loader-utils": "^2.0.0",
     "speak-tts": "^2.0.8",
