@@ -17,7 +17,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@plutovr/multi-app-manager": "^0.10.3",
+    "@plutovr/multi-app-manager": "^0.10.4",
     "cannon": "^0.6.2",
     "firebase": "^8.0.0",
     "inquirer": "^7.2.0",
